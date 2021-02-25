@@ -112,7 +112,7 @@ class Graph:
             edge.sort()
             edge = tuple(edge)
             self.edges[edge] = GREEN
-            self.police = pos
+        self.police = pos
 
                 
     #check who win
