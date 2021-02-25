@@ -112,7 +112,7 @@ class Graph:
             edge = tuple(edge)
             if self.edges.get(edge)!=None and self.edges[edge]!= RED:
                 self.edges[edge] = GREEN
-        self.police = pos
+
 
                 
     #check who win
