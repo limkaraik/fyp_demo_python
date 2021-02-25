@@ -21,7 +21,7 @@ class Graph:
         self.graph = data[2]
         self.num_police = len(police)
         self.police = police
-        self.thief = thief
+        self.thief = thief[0]
         self.screen = screen
         self.node_width = 600//self.num_cols
         self.node_height = 600//self.num_rows
@@ -29,7 +29,7 @@ class Graph:
         self.thief_icon = pygame.transform.scale(thief_img,(self.node_width//2,self.node_height//2))
         self.exit_icon = pygame.transform.scale(exit_img,(self.node_width//2,self.node_height//2))
         self.police_visited = set(police)
-        self.thief_visited = set([thief])
+        self.thief_visited = set(thief)
         self.edges={}
         self.goals= set(goals)
         for k,v in self.graph.items():
@@ -52,7 +52,6 @@ class Graph:
     def display(self):
         width = self.node_width//2
         height = self.node_height//2
-
         #draw edges
         for edge,color in self.edges.items():
             n1,n2 = edge
@@ -66,10 +65,10 @@ class Graph:
         for i in range(self.num_rows):
             for j in range(self.num_cols):
                 pos = i*self.num_cols+j+1
-                if pos in self.police_visited:
-                    color = GREEN
-                elif pos in self.thief_visited:
+                if pos in self.thief_visited:
                     color = RED
+                elif pos in self.police_visited:
+                    color = GREEN
                 else:
                     color = BLACK
                 x = 100 + j*self.node_width + width//2
@@ -102,8 +101,8 @@ class Graph:
                 edge= tuple(edge)
                 self.edges[edge] = RED
                 self.thief = p
-                return True
-        return False
+                return True , self.thief
+        return False , None
 
     def police_move(self,pos):
         for i in range(len(pos)):
@@ -111,16 +110,17 @@ class Graph:
             self.police_visited.add(pos[i])
             edge.sort()
             edge = tuple(edge)
-            self.edges[edge] = GREEN
-            self.police = pos
+            if self.edges.get(edge)!=None and self.edges[edge]!= RED:
+                self.edges[edge] = GREEN
+        self.police = pos
 
                 
     #check who win
     def checkWin(self):
-        if self.thief in self.goals:
-            return 1
-        elif self.thief in self.police:
+        if self.thief in self.police:
             return 2
+        elif self.thief in self.goals:
+            return 1
         return 0
                 
 

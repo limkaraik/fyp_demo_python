@@ -2,10 +2,11 @@ import pygame
 import time
 pygame.init()
 
-from data import EASY,MEDIUM,HARD
 from graph import Graph
 from misc import Misc
 from algo import Algo
+from backend.agent import AgentEval
+from backend.env import Env
 
 WINDOW_SIZE = (1200,800)
 BACKGROUND = (255,255,255)
@@ -21,9 +22,20 @@ pygame.display.set_caption("Demo")
 misc = Misc(screen)
 
 
-def play(data,thief,police,goals):
+def play(difficulty):
+    #init env
+    environment=Env(difficulty)
+    #get data
+    data = environment.mapSize
+    data.append(environment.adjlist)
+    #get goals
+    goals = environment.exits
+
+    #init defender
+    defender=AgentEval(difficulty)
+    
     #init graph
-    graph = Graph(screen,data,thief,police,goals)
+    graph = Graph(screen,data,environment.attacker_init,environment.defender_init[0],goals)
 
     #init algo
     algo = Algo(data[2])
@@ -31,9 +43,12 @@ def play(data,thief,police,goals):
     #main loop
     running = True
     #limit for num of turns
-    limit=20
+    limit=environment.time_horizon
     #gameover var
     gameover = False
+
+    game_state=environment.reset()
+
     while running:
         screen.fill(BACKGROUND)
 
@@ -41,10 +56,14 @@ def play(data,thief,police,goals):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 #player select where to move for thief
                 if not gameover:
-                    turn=graph.choose(event.pos)
+                    turn, attacker_a =graph.choose(event.pos)
                     if turn:
                         #police move base on algo here
-                        graph.police_move(algo.move(graph.thief,graph.police))
+                        defender_obs, attacker_obs = game_state.obs()
+                        def_current_legal_action, att_current_legal_action = game_state.legal_action()
+                        defender_a = defender.select_action([defender_obs], [def_current_legal_action])
+                        game_state = environment.simu_step(defender_a, attacker_a)
+                        graph.police_move(defender_a)
                         limit-=1
             
             elif event.type == pygame.QUIT:
@@ -66,7 +85,7 @@ def play(data,thief,police,goals):
             if m1:
                 return
         elif limit==0:
-            misc.message_to_screen('Its a draw!',(0,0,255),0,0,'large')
+            misc.message_to_screen('Player Lose...',(0,255,0),0,0,'large')
             m2= misc.button("Restart",850,320,150,150,(55,255,255),(0,255,0))
             gameover = True
             if m2:
@@ -96,11 +115,13 @@ def main():
         m= misc.button("Medium",500,350,150,150,(55,255,255),(0,255,0))
         h= misc.button("Hard",700,350,150,150,(55,255,255),(0,255,0))
         if e:
-            play(EASY,3,[10],[12])
+            play('easy')
         if m:
-            play(MEDIUM,9,[18,1],[5])
+            play('medium')
         if h:
-            play(HARD,23,[6,15],[30,26])
+            play('hard')
+        
+
         pygame.display.update()
 
 main()
