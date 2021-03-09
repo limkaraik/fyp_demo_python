@@ -80,13 +80,13 @@ def play(difficulty):
                 return
         elif result ==2: #police win
             misc.message_to_screen('You got caught! Player Lose...',(0,255,0),0,-100,'large')
-            m1= misc.button("Restart",500,400,150,150,(55,255,255),(0,255,0))
+            m1= misc.button("Restart",500,500,150,150,(55,255,255),(0,255,0))
             gameover = True
             if m1:
                 return
         elif limit==0:
             misc.message_to_screen('Time Out! Player Lose...',(0,255,0),0,0,'large')
-            m2= misc.button("Restart",500,400,150,150,(55,255,255),(0,255,0))
+            m2= misc.button("Restart",500,500,150,150,(55,255,255),(0,255,0))
             gameover = True
             if m2:
                 return
