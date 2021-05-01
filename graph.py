@@ -2,6 +2,7 @@ import pygame
 police_img = pygame.image.load("./images/police.png")
 thief_img = pygame.image.load("./images/robber.png")
 exit_img = pygame.image.load("./images/exit.png")
+jail_img = pygame.image.load("./images/jail.png")
 
 LEFT_BOUNDARY = 100
 RIGHT_BOUNDARY = 700 
@@ -28,6 +29,7 @@ class Graph:
         self.police_icon = pygame.transform.scale(police_img,(self.node_width//2,self.node_height//2))
         self.thief_icon = pygame.transform.scale(thief_img,(self.node_width//2,self.node_height//2))
         self.exit_icon = pygame.transform.scale(exit_img,(self.node_width//2,self.node_height//2))
+        self.jail_icon = pygame.transform.scale(jail_img,(self.node_width//2,self.node_height//2))
         self.police_visited = set(police)
         self.thief_visited = set(thief)
         self.edges={}
@@ -83,6 +85,38 @@ class Graph:
                     node = self.Node(x,y,width,height,color,BLUE)
         
         
+    def display_lose(self):
+        width = self.node_width//2
+        height = self.node_height//2
+        #draw edges
+        for edge,color in self.edges.items():
+            n1,n2 = edge
+            n1_y = 100+((n1-1)//self.num_cols)*self.node_height +height
+            n1_x = 100+(n1-1-((n1-1)//self.num_cols)*self.num_cols)*self.node_width + width
+            n2_y = 100+((n2-1)//self.num_cols)*self.node_height +height
+            n2_x = 100+(n2-1-((n2-1)//self.num_cols)*self.num_cols)*self.node_width + width
+            pygame.draw.line(self.screen, color, (n1_x,n1_y), (n2_x,n2_y))
+            
+        #draw nodes
+        for i in range(self.num_rows):
+            for j in range(self.num_cols):
+                pos = i*self.num_cols+j+1
+                if pos in self.thief_visited:
+                    color = RED
+                elif pos in self.police_visited:
+                    color = GREEN
+                else:
+                    color = BLACK
+                x = 100 + j*self.node_width + width//2
+                y = 100 + i*self.node_height + height//2
+                if pos ==self.thief:
+                    self.screen.blit(self.jail_icon,(x,y))
+                elif pos in self.police:
+                    self.screen.blit(self.police_icon,(x,y))
+                elif pos in self.goals:
+                    self.screen.blit(self.exit_icon,(x,y))
+                else:
+                    node = self.Node(x,y,width,height,color,BLUE)
     
     def choose(self,pos):
         x,y = pos

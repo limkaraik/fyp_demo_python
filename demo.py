@@ -79,8 +79,13 @@ def play(difficulty):
             if m:
                 return
         elif result ==2: #police win
-            misc.message_to_screen('You got caught! Player Lose...',(0,255,0),0,-100,'large')
-            m1= misc.button("Restart",500,500,150,150,(55,255,255),(0,255,0))
+            #draw game boundary
+            pygame.draw.rect(screen,(0,0,0),(50,50,700,700),1)
+            #display graph
+            graph.display_lose()
+            #display turns left
+            misc.message_to_screen('You got caught! Player lose...',(0,0,255),330,-200,'small')
+            m1= misc.button("Restart",850,320,150,150,(55,255,255),(0,255,0))
             gameover = True
             if m1:
                 return
