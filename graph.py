@@ -46,10 +46,10 @@ class Graph:
     def Node(self,x,y,width,height,inactive_color,active_color):
         cur = pygame.mouse.get_pos()
         if x+width > cur[0] > x and y+height > cur[1] > y:
-            pygame.draw.rect(self.screen,active_color,(x,y,width,height))
+            pygame.draw.circle(self.screen,active_color,(x+(width//2),y+(height//2)),min(width,height)//2)
                 
         else:
-            pygame.draw.rect(self.screen,inactive_color,(x,y,width,height))
+            pygame.draw.circle(self.screen,inactive_color,(x+(width//2),y+(height//2)),min(width,height)//2)
 
     def display(self):
         width = self.node_width//2
@@ -61,7 +61,7 @@ class Graph:
             n1_x = 100+(n1-1-((n1-1)//self.num_cols)*self.num_cols)*self.node_width + width
             n2_y = 100+((n2-1)//self.num_cols)*self.node_height +height
             n2_x = 100+(n2-1-((n2-1)//self.num_cols)*self.num_cols)*self.node_width + width
-            pygame.draw.line(self.screen, color, (n1_x,n1_y), (n2_x,n2_y))
+            pygame.draw.line(self.screen, color, (n1_x,n1_y), (n2_x,n2_y),2)
             
         #draw nodes
         for i in range(self.num_rows):
@@ -95,7 +95,7 @@ class Graph:
             n1_x = 100+(n1-1-((n1-1)//self.num_cols)*self.num_cols)*self.node_width + width
             n2_y = 100+((n2-1)//self.num_cols)*self.node_height +height
             n2_x = 100+(n2-1-((n2-1)//self.num_cols)*self.num_cols)*self.node_width + width
-            pygame.draw.line(self.screen, color, (n1_x,n1_y), (n2_x,n2_y))
+            pygame.draw.line(self.screen, color, (n1_x,n1_y), (n2_x,n2_y),2)
             
         #draw nodes
         for i in range(self.num_rows):

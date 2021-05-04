@@ -102,6 +102,9 @@ def play(difficulty):
             graph.display()
             #display turns left
             misc.message_to_screen('Turns left: '+str(limit),(0,0,255),310,-200,'medium')
+            m= misc.button("Return",850,320,150,150,(55,255,255),(0,255,0))
+            if m:
+                return
         pygame.display.update()
 
 def main():
