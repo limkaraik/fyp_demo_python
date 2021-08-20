@@ -12,6 +12,7 @@ import random
 import time
 from itertools import product
 from backend.maps import Maps
+from backend.data import *
 
 device = torch.device('cpu')
 
@@ -22,12 +23,25 @@ class AgentEval(object):
         self.map=Maps(difficulty)
 
         node_embedding_path=join('./backend/saved_model',difficulty,'node_embedding.npy')
+
         model_path = join('./backend/saved_model', difficulty,
                             'avg_net.pt')
         
         self.avg_net = DRRN(self.map.num_nodes, self.map.time_horizon, node_embedding_path, self.map.embedding_size, self.map.hidden_size,
                             self.map.relevant_v_size, num_defender=self.map.num_defender).to(device)
         self.avg_net.load_state_dict(torch.load(model_path,map_location=device))
+    
+    def action_probs(self, observation, legal_actions, numpy=False):
+        #print("observation: ", observation)
+        #print("legal_actions: ",legal_actions)
+        with torch.no_grad():
+            #print("avg_net: ",self.avg_net(observation, legal_actions) )
+            prob = F.softmax(self.avg_net(observation, legal_actions))
+            #print("prob: ", prob)
+            if numpy:
+                return prob.numpy()
+            else:
+                return prob
 
     def select_action(self, observation, legal_actions):
         assert len(observation) == 1
@@ -40,32 +54,24 @@ class AgentEval(object):
             action = legal_actions[0][action_idx]
             return action
 
-    def action_probs(self, observation, legal_actions, numpy=False):
-        with torch.no_grad():
-            prob = F.softmax(self.avg_net(observation, legal_actions))
-            if numpy:
-                return prob.numpy()
-            else:
-                return prob
-
-
-
 
 class DRRN(nn.Module):
     def __init__(self, num_nodes, time_horizon, pre_embedding_path, embedding_size,
                  hidden_size, relevant_v_size, num_defender=None, naive=False, out_mode='sl'):
         super(DRRN, self).__init__()
 
-        assert out_mode in ['sl']
+        assert out_mode in ['sl','rl']
         assert naive is False
-
-        weight = torch.FloatTensor(np.load(pre_embedding_path))
-        assert weight.size(1) == embedding_size
-        self.embedding = nn.Embedding.from_pretrained(
-            weight, freeze=True, padding_idx=0)
-        self.state_encoder = StateEncoder(num_nodes, time_horizon, embedding_size,
-                                            hidden_size, relevant_v_size, num_defender, node_embedding=self.embedding)
-            
+        if pre_embedding_path:
+            weight = torch.FloatTensor(np.load(pre_embedding_path))
+            assert weight.size(1) == embedding_size
+            self.embedding = nn.Embedding.from_pretrained(
+                weight, freeze=True, padding_idx=0)
+            self.state_encoder = StateEncoder(num_nodes, time_horizon, embedding_size,
+                                                hidden_size, relevant_v_size, num_defender, node_embedding=self.embedding)
+        else:
+            self.state_encoder = StateEncoder(num_nodes, time_horizon, embedding_size,
+                                                hidden_size, relevant_v_size, num_defender, node_embedding=None)
         
         self.embedding_a = nn.Embedding(
             num_nodes+1, embedding_size, padding_idx=0)
@@ -92,7 +98,6 @@ class DRRN(nn.Module):
         a_in = pad_sequence(a_in, batch_first=True,
                             padding_value=0).detach()
         a_in.requires_grad = False  # shape:(batch, max_num_actions)
-
         a_feature = self.embedding_a(a_in)
         if self.num_defender > 1:
             a_feature = torch.flatten(a_feature, start_dim=2)
@@ -101,7 +106,6 @@ class DRRN(nn.Module):
         a_feature = self.fc_a_2(a_feature)
         if not self.naive:
             s_feature = s_feature.unsqueeze(1).repeat(1, a_feature.size(1), 1)
-
             # shape(batch, max_num_actions, full_features)
             feature = torch.cat((s_feature, a_feature), dim=2)
             output = F.relu(self.fc1(feature))
@@ -116,6 +120,7 @@ class DRRN(nn.Module):
                                 padding_value=-1e9).detach()
             mask.requires_grad = False
             output += mask
+        #print("output 2: ", output)
         if self.out_mode == 'sl':
             return output.squeeze(0)
         elif self.out_mode == 'rl':
@@ -159,7 +164,7 @@ class StateEncoder(nn.Module):
                 assert len(position[0]) == self.num_defender
             elif self.num_defender == 1:
                 assert isinstance(position[0], int)
-
+        #what is h/t/p feature?
         h_feature = F.relu(self.seq_encoder(attacker_history))
 
         norm_t = torch.Tensor(norm_t).to(device)
@@ -238,3 +243,58 @@ class Gated_CNN(nn.Module):
         x = torch.squeeze(x)
         # x is the feature vector for the input sequence
         return x
+
+class AllPathAttacker(object):
+    def __init__(self):
+        self.exits = EXITS
+        self.init_loc = INIT_LOC
+        self.time_horizon = TIME_HORIZON
+        self.graph = nx.from_dict_of_lists(YISHUN_GRAPH)
+        self.T = 0
+        self.paths = {}
+        for e in self.exits:
+            self.paths[e] = []
+        self.path = None
+        self.fastest = []
+        for e in self.exits:
+            self.paths[e] += list(nx.all_simple_paths(
+                self.graph, source=self.init_loc[0], target=e, cutoff=self.time_horizon))
+        for e in self.exits:
+            path = list(nx.shortest_path(
+                self.graph, source=self.init_loc[0], target=e))
+            self.fastest.append(path)
+
+    def select_action(self):
+        action = self.path[self.t]
+        self.t += 1
+        return (action)
+
+    def reset(self):
+        self.t = 1
+        if random.randint(0,100) <= 10:
+            self.path = random.choice(self.fastest)
+        else:
+            e = self.paths[random.choice(self.exits)]
+            self.path = random.choice(e)
+
+class AgentEvalYishun(object):
+    def __init__(self):
+
+        self.map=Maps('yishun')
+       
+        node_embedding_path = None
+        model_path = join('./backend/saved_model', 'yishun',
+                            'br_net.pt')
+
+        self.br_net = DRRN(self.map.num_nodes, self.map.time_horizon, node_embedding_path, self.map.embedding_size, self.map.hidden_size,
+                            self.map.relevant_v_size, num_defender=self.map.num_defender,out_mode='rl').to(device)
+        self.br_net.load_state_dict(torch.load(model_path,map_location=device))
+    
+
+    def select_action(self, observation, legal_actions):
+        assert len(observation) == 1
+        assert len(legal_actions) == 1
+        with torch.no_grad():
+            action = self.br_net(observation, legal_actions)
+            action = tuple(action[0][0].numpy())
+            return action

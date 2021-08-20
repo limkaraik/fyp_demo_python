@@ -3,11 +3,11 @@ import torch
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-
+from backend.data import *
 
 class Maps(object):
     def __init__(self, difficulty):
-        assert difficulty in ['easy', 'medium', 'hard']
+        assert difficulty in ['easy', 'medium', 'hard','yishun']
 
         if difficulty is 'easy':
             random.seed(4)
@@ -113,7 +113,7 @@ class Maps(object):
 
             self.time_horizon=15
 
-        else:  # hard
+        elif difficulty is 'hard':
             random.seed(100)
             m = 30
             n = 30
@@ -170,6 +170,29 @@ class Maps(object):
             self.relevant_v_size= 64
 
             self.time_horizon=30
+        elif difficulty == 'yishun':
+            g = nx.from_dict_of_lists(YISHUN_GRAPH)
+            map_adjlist = YISHUN_GRAPH
+            max_actions = 0
+            for node in map_adjlist:
+                map_adjlist[node].sort()
+                if len(map_adjlist[node]) > max_actions:
+                    max_actions = len(map_adjlist[node])
+            self.num_nodes = len(map_adjlist)
+            self.adjlist = map_adjlist
+            self.defender_init = DEFENDER_INIT
+            self.attacker_init = INIT_LOC
+            self.exits = EXITS
+            self.num_defender = len(self.defender_init[0])
+            self.max_actions = pow(max_actions, self.num_defender)
+            self.graph = g
+            self.embedding_size= 32
+            self.hidden_size= 64
+            self.relevant_v_size= 64
+            self.size = None
+
+            self.time_horizon=TIME_HORIZON
+
 
 
 if __name__ == '__main__':

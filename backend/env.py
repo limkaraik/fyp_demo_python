@@ -4,7 +4,7 @@ from backend.maps import Maps
 
 class Env(object):
     def __init__(self, difficulty):
-        assert difficulty in ['easy', 'medium', 'hard']
+        assert difficulty in ['easy', 'medium', 'hard','yishun']
         Map=Maps(difficulty)
         
         self.mapSize = Map.size
